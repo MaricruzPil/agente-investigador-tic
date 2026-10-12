@@ -1,9 +1,17 @@
 const btnInvestigar = document.getElementById("btnInvestigar");
+const btnDetener = document.getElementById("btnDetener");
+const btnExportarPdf = document.getElementById("btnExportarPdf");
+const btnCopiarMarkdown = document.getElementById("btnCopiarMarkdown");
+const btnLimpiarHistorial = document.getElementById("btnLimpiarHistorial");
 const pregunta = document.getElementById("pregunta");
+const profundidad = document.getElementById("profundidad");
 
 const actividad = document.getElementById("actividad");
 const estadoActual = document.getElementById("estadoActual");
 const previewContent = document.getElementById("previewContent");
+
+const historial = document.getElementById("historial");
+const listaHistorial = document.getElementById("listaHistorial");
 
 const fuentesEnVivo = document.getElementById("fuentesEnVivo");
 const fuentesFinales = document.getElementById("fuentesFinales");
@@ -14,14 +22,31 @@ const resultado = document.getElementById("resultado");
 const reporte = document.getElementById("reporte");
 const error = document.getElementById("error");
 
+const HISTORIAL_KEY = "agenteInvestigador.historial";
+const MAX_HISTORIAL = 6;
+
 let fuentesConsultadas = [];
 let reporteCompleto = "";
+let preguntaActual = "";
+let controladorActivo = null;
+let investigacionActiva = false;
+let investigacionCancelada = false;
 
 
 btnInvestigar.addEventListener("click", investigar);
+btnDetener.addEventListener("click", detenerInvestigacion);
+btnExportarPdf.addEventListener("click", exportarPdf);
+btnCopiarMarkdown.addEventListener("click", copiarMarkdown);
+btnLimpiarHistorial.addEventListener("click", limpiarHistorial);
+
+document.addEventListener("DOMContentLoaded", renderizarHistorial);
 
 
 async function investigar() {
+    if (investigacionActiva) {
+        return;
+    }
+
     const textoPregunta = pregunta.value.trim();
 
     if (!textoPregunta) {
@@ -29,7 +54,10 @@ async function investigar() {
         return;
     }
 
+    preguntaActual = textoPregunta;
     prepararInterfaz();
+
+    controladorActivo = new AbortController();
 
     try {
         const respuesta = await fetch(
@@ -40,24 +68,47 @@ async function investigar() {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    pregunta: textoPregunta
-                })
+                    pregunta: textoPregunta,
+                    profundidad: profundidad.value
+                }),
+                signal: controladorActivo.signal
             }
         );
 
         if (!respuesta.body) {
-            throw new Error(
-                "El navegador no pudo abrir el flujo de datos."
-            );
+            throw new Error("El navegador no pudo abrir el flujo de datos.");
+        }
+
+        if (!respuesta.ok) {
+            await procesarStream(respuesta);
+            return;
         }
 
         await procesarStream(respuesta);
 
     } catch (err) {
-        mostrarError(err.message);
+        if (err.name === "AbortError" || investigacionCancelada) {
+            mostrarCancelacion();
+        } else if (!navigator.onLine) {
+            mostrarError("No hay conexión a Internet. Revisa tu red e inténtalo de nuevo.");
+        } else {
+            mostrarError(`No se pudo conectar con el servidor: ${err.message}`);
+        }
     } finally {
-        btnInvestigar.disabled = false;
+        terminarEstadoActivo();
     }
+}
+
+
+function detenerInvestigacion() {
+    if (!controladorActivo) {
+        return;
+    }
+
+    investigacionCancelada = true;
+    controladorActivo.abort();
+    mostrarCancelacion();
+    terminarEstadoActivo();
 }
 
 
@@ -84,17 +135,17 @@ async function procesarStream(respuesta) {
                 continue;
             }
 
-            procesarEventoSSE(bloque);
+            procesarEventoSSE(bloque, respuesta.status);
         }
     }
 
     if (buffer.trim()) {
-        procesarEventoSSE(buffer);
+        procesarEventoSSE(buffer, respuesta.status);
     }
 }
 
 
-function procesarEventoSSE(bloque) {
+function procesarEventoSSE(bloque, estadoHttp) {
     const lineas = bloque.split("\n");
 
     let tipo = "message";
@@ -119,14 +170,12 @@ function procesarEventoSSE(bloque) {
     try {
         contenido = JSON.parse(data);
     } catch {
+        mostrarError("El servidor envió una respuesta que no se pudo interpretar.");
         return;
     }
 
     if (tipo === "estado") {
-        actualizarEstado(
-            contenido.etapa,
-            contenido.mensaje
-        );
+        actualizarEstado(contenido.etapa, contenido.mensaje);
     }
 
     if (tipo === "fuente") {
@@ -150,18 +199,45 @@ function procesarEventoSSE(bloque) {
     }
 
     if (tipo === "error") {
-        const mensaje = contenido.detalle
-            ? `${contenido.mensaje} ${contenido.detalle}`
-            : contenido.mensaje;
-
-        mostrarError(mensaje);
+        mostrarError(formatearError(contenido, estadoHttp));
     }
+}
+
+
+function formatearError(contenido, estadoHttp) {
+    const mensaje = contenido.detalle
+        ? `${contenido.mensaje} ${contenido.detalle}`
+        : contenido.mensaje;
+
+    if (contenido.tipo === "especializacion") {
+        return mensaje;
+    }
+
+    if (estadoHttp === 400) {
+        return mensaje || "La solicitud no es válida. Revisa la pregunta enviada.";
+    }
+
+    if (estadoHttp === 401 || estadoHttp === 403) {
+        return "No se pudo autenticar la solicitud. Revisa la configuración de la API key.";
+    }
+
+    if (estadoHttp === 429) {
+        return "Se alcanzó un límite de uso o demasiadas solicitudes. Espera unos minutos e inténtalo de nuevo.";
+    }
+
+    if (estadoHttp >= 500) {
+        return mensaje || "El servidor tuvo un problema interno al procesar la investigación.";
+    }
+
+    return mensaje || "Ocurrió un error durante la investigación.";
 }
 
 
 function prepararInterfaz() {
     fuentesConsultadas = [];
     reporteCompleto = "";
+    investigacionActiva = true;
+    investigacionCancelada = false;
 
     error.classList.add("d-none");
     resultado.classList.add("d-none");
@@ -188,6 +264,19 @@ function prepararInterfaz() {
     );
 
     btnInvestigar.disabled = true;
+    pregunta.disabled = true;
+    profundidad.disabled = true;
+    btnDetener.classList.remove("d-none");
+}
+
+
+function terminarEstadoActivo() {
+    investigacionActiva = false;
+    controladorActivo = null;
+    btnInvestigar.disabled = false;
+    pregunta.disabled = false;
+    profundidad.disabled = false;
+    btnDetener.classList.add("d-none");
 }
 
 
@@ -233,7 +322,7 @@ function actualizarPreview(texto) {
     }
 
     const resumen = preview.length > 1800
-        ? preview.slice(0, 1800) + "…"
+        ? `${preview.slice(0, 1800)}...`
         : preview;
 
     previewContent.textContent = resumen;
@@ -256,18 +345,17 @@ function agregarFuente(fuente) {
 
     fuentesConsultadas.push(fuente);
 
-    const placeholder =
-        document.getElementById("sinFuentes");
+    const placeholder = document.getElementById("sinFuentes");
 
     if (placeholder) {
         placeholder.remove();
     }
 
     const dominio = obtenerDominio(fuente.url);
-    const titulo = fuente.titulo &&
-        fuente.titulo !== fuente.url
-            ? fuente.titulo
-            : dominio;
+    const calidad = clasificarFuente(fuente);
+    const titulo = fuente.titulo && fuente.titulo !== fuente.url
+        ? fuente.titulo
+        : dominio;
 
     const elemento = document.createElement("article");
     elemento.className = "live-source-card";
@@ -289,6 +377,10 @@ function agregarFuente(fuente) {
 
             <div class="source-domain">
                 ${escaparHTML(dominio)}
+            </div>
+
+            <div class="source-quality">
+                ${escaparHTML(calidad)}
             </div>
         </div>
     `;
@@ -321,11 +413,21 @@ function finalizarFlujo() {
 
     renderizarReporteFinal(reporteCompleto);
     renderizarFuentesFinales();
+    guardarEnHistorial();
 
     resultado.classList.remove("d-none");
     resultado.scrollIntoView({
         behavior: "smooth",
         block: "start"
+    });
+}
+
+
+function mostrarCancelacion() {
+    estadoActual.textContent = "La investigación fue detenida por el usuario.";
+
+    document.querySelectorAll(".process-step").forEach(paso => {
+        paso.classList.remove("active");
     });
 }
 
@@ -673,6 +775,7 @@ function renderizarFuentesFinales() {
 
     fuentesConsultadas.forEach((fuente, indice) => {
         const dominio = obtenerDominio(fuente.url);
+        const calidad = clasificarFuente(fuente);
         const titulo = fuente.titulo && fuente.titulo !== fuente.url
             ? fuente.titulo
             : dominio;
@@ -698,6 +801,10 @@ function renderizarFuentesFinales() {
                         <div class="source-ref-url">
                             ${escaparHTML(fuente.url)}
                         </div>
+
+                        <div class="source-quality mt-2">
+                            ${escaparHTML(calidad)}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -705,6 +812,227 @@ function renderizarFuentesFinales() {
 
         fuentesFinales.appendChild(columna);
     });
+}
+
+
+function guardarEnHistorial() {
+    if (!reporteCompleto.trim()) {
+        return;
+    }
+
+    const item = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        pregunta: preguntaActual,
+        reporte: reporteCompleto,
+        fuentes: fuentesConsultadas,
+        fecha: new Date().toISOString()
+    };
+
+    const registros = obtenerHistorial()
+        .filter(registro => registro.pregunta !== item.pregunta);
+
+    registros.unshift(item);
+    localStorage.setItem(
+        HISTORIAL_KEY,
+        JSON.stringify(registros.slice(0, MAX_HISTORIAL))
+    );
+
+    renderizarHistorial();
+}
+
+
+function obtenerHistorial() {
+    try {
+        return JSON.parse(localStorage.getItem(HISTORIAL_KEY) || "[]");
+    } catch {
+        return [];
+    }
+}
+
+
+function renderizarHistorial() {
+    const registros = obtenerHistorial();
+
+    if (!registros.length) {
+        historial.classList.add("d-none");
+        listaHistorial.innerHTML = "";
+        return;
+    }
+
+    historial.classList.remove("d-none");
+    listaHistorial.innerHTML = "";
+
+    registros.forEach(registro => {
+        const elemento = document.createElement("article");
+        elemento.className = "history-item";
+
+        elemento.innerHTML = `
+            <div class="history-main">
+                <div class="history-question">
+                    ${escaparHTML(registro.pregunta)}
+                </div>
+                <div class="history-meta">
+                    ${escaparHTML(formatearFecha(registro.fecha))} ·
+                    ${registro.fuentes?.length || 0} fuentes
+                </div>
+            </div>
+
+            <button class="btn btn-sm btn-outline-primary" type="button">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Abrir
+            </button>
+        `;
+
+        elemento.querySelector("button").addEventListener("click", () => {
+            cargarDesdeHistorial(registro);
+        });
+
+        listaHistorial.appendChild(elemento);
+    });
+}
+
+
+function cargarDesdeHistorial(registro) {
+    preguntaActual = registro.pregunta || "";
+    pregunta.value = preguntaActual;
+    reporteCompleto = registro.reporte || "";
+    fuentesConsultadas = registro.fuentes || [];
+
+    error.classList.add("d-none");
+    actividad.classList.add("d-none");
+    resultado.classList.remove("d-none");
+
+    renderizarReporteFinal(reporteCompleto);
+    renderizarFuentesFinales();
+    actualizarContadores();
+
+    resultado.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+
+function limpiarHistorial() {
+    localStorage.removeItem(HISTORIAL_KEY);
+    renderizarHistorial();
+}
+
+
+function exportarPdf() {
+    if (!reporteCompleto.trim()) {
+        mostrarError("No hay un reporte listo para exportar.");
+        return;
+    }
+
+    window.print();
+}
+
+
+async function copiarMarkdown() {
+    if (!reporteCompleto.trim()) {
+        mostrarError("No hay un reporte listo para copiar.");
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(reporteCompleto);
+        mostrarAvisoTemporal("Reporte Markdown copiado al portapapeles.");
+    } catch {
+        copiarMarkdownConFallback(reporteCompleto);
+        mostrarAvisoTemporal("Reporte Markdown copiado al portapapeles.");
+    }
+}
+
+
+function copiarMarkdownConFallback(texto) {
+    const area = document.createElement("textarea");
+    area.value = texto;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+}
+
+
+function clasificarFuente(fuente) {
+    const url = fuente?.url || "";
+    const titulo = fuente?.titulo || "";
+    const dominio = obtenerDominio(url).toLowerCase();
+    const texto = `${dominio} ${titulo}`.toLowerCase();
+
+    if (/\.(gov|gob)(\.|$)/.test(dominio) || texto.includes("gobierno")) {
+        return "Fuente oficial";
+    }
+
+    if (
+        dominio.endsWith(".edu") ||
+        dominio.includes(".edu.") ||
+        texto.includes("universidad") ||
+        texto.includes("university")
+    ) {
+        return "Fuente académica";
+    }
+
+    if (
+        texto.includes("docs.") ||
+        texto.includes("developer") ||
+        texto.includes("documentation") ||
+        texto.includes("documentacion") ||
+        texto.includes("nist") ||
+        texto.includes("iso")
+    ) {
+        return "Documentación técnica";
+    }
+
+    if (
+        texto.includes("ieee") ||
+        texto.includes("acm") ||
+        texto.includes("arxiv") ||
+        texto.includes("research") ||
+        texto.includes("journal")
+    ) {
+        return "Investigación especializada";
+    }
+
+    if (
+        texto.includes("microsoft") ||
+        texto.includes("google") ||
+        texto.includes("amazon") ||
+        texto.includes("ibm") ||
+        texto.includes("cisco") ||
+        texto.includes("oracle") ||
+        texto.includes("openai")
+    ) {
+        return "Fuente empresarial";
+    }
+
+    if (
+        texto.includes("wired") ||
+        texto.includes("zdnet") ||
+        texto.includes("techcrunch") ||
+        texto.includes("mit technology review")
+    ) {
+        return "Medio especializado";
+    }
+
+    return "Fuente web";
+}
+
+
+function mostrarAvisoTemporal(mensaje) {
+    error.textContent = mensaje;
+    error.classList.remove("d-none", "alert-danger");
+    error.classList.add("alert-success");
+
+    window.setTimeout(() => {
+        error.classList.add("d-none");
+        error.classList.remove("alert-success");
+        error.classList.add("alert-danger");
+    }, 2600);
 }
 
 
@@ -758,7 +1086,6 @@ function parseHallazgos(text) {
         .filter(Boolean);
 
     for (const bloque of bloques) {
-
         const encabezadoMatch = bloque.match(
             /^###\s+Hallazgo\s+\d+(?:\s*:\s*(.+))?\s*$/mi
         );
@@ -767,8 +1094,7 @@ function parseHallazgos(text) {
             continue;
         }
 
-        const nombreDesdeEncabezado =
-            (encabezadoMatch[1] || "").trim();
+        const nombreDesdeEncabezado = (encabezadoMatch[1] || "").trim();
 
         const nombre =
             extraerCampoHallazgo(bloque, "Nombre", ["Descripción", "Fuente", "URL"]) ||
@@ -834,8 +1160,6 @@ function parseHallazgos(text) {
 
 
 function extraerCampoHallazgo(bloque, campo, siguientes = []) {
-    const campos = [campo, ...siguientes];
-
     const inicio = new RegExp(
         `\\*\\*${escaparRegex(campo)}:\\*\\*\\s*`,
         "i"
@@ -847,9 +1171,7 @@ function extraerCampoHallazgo(bloque, campo, siguientes = []) {
         return "";
     }
 
-    const start =
-        matchInicio.index + matchInicio[0].length;
-
+    const start = matchInicio.index + matchInicio[0].length;
     let end = bloque.length;
 
     for (const siguiente of siguientes) {
@@ -862,10 +1184,7 @@ function extraerCampoHallazgo(bloque, campo, siguientes = []) {
             )
         );
 
-        if (
-            matchSiguiente &&
-            start + matchSiguiente.index < end
-        ) {
+        if (matchSiguiente && start + matchSiguiente.index < end) {
             end = start + matchSiguiente.index;
         }
     }
@@ -1103,7 +1422,7 @@ function extraerResumen(texto) {
     }
 
     return clean.length > 240
-        ? clean.slice(0, 240) + "…"
+        ? `${clean.slice(0, 240)}...`
         : clean;
 }
 
@@ -1118,11 +1437,25 @@ function obtenerDominio(url) {
 
 
 function mostrarError(mensaje) {
+    error.classList.remove("alert-success");
+    error.classList.add("alert-danger");
     error.textContent = mensaje || "Ocurrió un error.";
     error.classList.remove("d-none");
 
     if (!actividad.classList.contains("d-none")) {
         estadoActual.textContent = "La investigación se interrumpió.";
+    }
+}
+
+
+function formatearFecha(fechaIso) {
+    try {
+        return new Intl.DateTimeFormat("es-MX", {
+            dateStyle: "medium",
+            timeStyle: "short"
+        }).format(new Date(fechaIso));
+    } catch {
+        return "Fecha no disponible";
     }
 }
 

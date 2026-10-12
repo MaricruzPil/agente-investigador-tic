@@ -1,27 +1,19 @@
-# Agente Investigador V4
+# Agente Investigador TIC
 
-Cambios principales:
+Aplicación Flask para realizar investigaciones sobre Tecnologías de la
+Información y las Comunicaciones con búsqueda web, streaming de resultados,
+fuentes en vivo y reporte estructurado.
 
-- Se corrigió el parser de Hallazgos principales.
-- El nombre ya no mezcla descripción, fuente ni URL.
-- Cada hallazgo se muestra como una tarjeta independiente.
-- La descripción se presenta en un bloque de lectura.
-- La fuente aparece en un panel separado.
-- La URL larga se reemplaza visualmente por:
-  - nombre de fuente,
-  - dominio,
-  - botón "Abrir fuente".
-- El prompt obliga al modelo a separar:
-  - Nombre
-  - Descripción
-  - Fuente
-  - URL
-- Mantiene:
-  - streaming,
-  - fuentes en vivo,
-  - tabla comparativa,
-  - plan visual,
-  - reporte estructurado.
+## Funciones
+
+- Validación de especialización: rechaza preguntas fuera del ámbito TIC.
+- Streaming del proceso de investigación mediante Server-Sent Events.
+- Detección y visualización de fuentes consultadas.
+- Reporte final estructurado con hallazgos, comparación, tendencias y conclusiones.
+- Botón para detener una investigación en curso.
+- Botón para exportar el reporte a PDF desde el diálogo de impresión del navegador.
+- Historial local de investigaciones recientes usando `localStorage`.
+- Manejo diferenciado de errores de validación, especialización, autenticación, límites y servidor.
 
 ## Ejecutar
 
@@ -32,13 +24,17 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Configura antes tu API Key en `config.py`.
+Después abre:
 
-## V5 - Corrección de alineación
+```text
+http://127.0.0.1:5000
+```
 
-- Se eliminó el scroll horizontal general de la página.
-- Todas las secciones del reporte usan el mismo ancho.
-- El plan de investigación responde al tamaño de pantalla.
-- La tabla comparativa hace scroll únicamente dentro de su tarjeta.
-- Se añadieron reglas para textos y URLs largas.
-- Coincidencias, tendencias, hallazgos y fuentes ya no desbordan el contenedor.
+Configura antes tu API key y el modelo en `config.py`.
+
+## Archivos principales
+
+- `app.py`: servidor Flask, validación TIC, llamada a OpenAI y streaming SSE.
+- `templates/index.html`: interfaz principal.
+- `assets/js/app.js`: flujo del cliente, cancelación, errores, historial y exportación PDF.
+- `assets/css/styles.css`: estilos visuales y reglas de impresión.

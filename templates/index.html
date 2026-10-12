@@ -62,10 +62,10 @@
                                 </h1>
 
                                 <p class="hero-text">
-                                    Escribe una pregunta y observa cómo el agente
-                                    analiza el problema, consulta fuentes en línea,
-                                    organiza la evidencia y genera un reporte
-                                    profesional.
+                                    Escribe una pregunta sobre Tecnologías de la
+                                    Información y las Comunicaciones. El agente
+                                    analiza el problema, consulta fuentes en línea
+                                    y genera un reporte profesional.
                                 </p>
 
                                 <div class="hero-badges">
@@ -98,7 +98,7 @@
                                     </div>
 
                                     <div class="mini-steps">
-                                        <div><span>1</span> Analiza la pregunta</div>
+                                        <div><span>1</span> Valida la especialidad TIC</div>
                                         <div><span>2</span> Busca fuentes</div>
                                         <div><span>3</span> Contrasta evidencia</div>
                                         <div><span>4</span> Genera reporte</div>
@@ -136,7 +136,8 @@
                                 </h2>
                                 <p class="section-subtitle mb-0">
                                     Puedes preguntar sobre IoT, IA, redes,
-                                    ciberseguridad, nube u otras tecnologías.
+                                    ciberseguridad, nube, software, datos u otras
+                                    tecnologías TIC.
                                 </p>
                             </div>
                         </div>
@@ -144,19 +145,60 @@
                         <textarea id="pregunta" class="form-control question-box" rows="4"
                             placeholder="Ejemplo: ¿Cuáles son las principales tecnologías de conectividad utilizadas actualmente en IoT y en qué escenarios conviene utilizar cada una?"></textarea>
 
-                        <div
-                            class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4">
+                        <div class="research-options mt-4">
+                            <label class="option-label" for="profundidad">
+                                Profundidad de investigación
+                            </label>
+
+                            <select id="profundidad" class="form-select depth-select">
+                                <option value="rapida">Rápida</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="profunda">Profunda</option>
+                            </select>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4">
                             <div class="helper-text">
                                 <i class="bi bi-info-circle me-1"></i>
-                                El agente mostrará en vivo las fuentes que vaya consultando.
+                                El agente solo atiende investigaciones relacionadas con TIC.
                             </div>
 
-                            <button id="btnInvestigar" class="btn btn-primary btn-lg action-btn">
-                                <i class="bi bi-rocket-takeoff me-2"></i>
-                                Iniciar investigación
+                            <div class="action-group">
+                                <button id="btnDetener" class="btn btn-outline-danger btn-lg stop-btn d-none" type="button">
+                                    <i class="bi bi-stop-circle me-2"></i>
+                                    Detener
+                                </button>
+
+                                <button id="btnInvestigar" class="btn btn-primary btn-lg action-btn" type="button">
+                                    <i class="bi bi-rocket-takeoff me-2"></i>
+                                    Iniciar investigación
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <section id="historial" class="glass-card mb-4 d-none">
+                    <div class="p-4 p-lg-5">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                            <div>
+                                <span class="section-kicker">HISTORIAL</span>
+                                <h2 class="section-title h4 mb-1">
+                                    Investigaciones recientes
+                                </h2>
+                                <p class="section-subtitle mb-0">
+                                    Guardadas localmente en este navegador.
+                                </p>
+                            </div>
+
+                            <button id="btnLimpiarHistorial" class="btn btn-sm btn-outline-secondary" type="button">
+                                <i class="bi bi-trash3 me-1"></i>
+                                Limpiar historial
                             </button>
                         </div>
 
+                        <div id="listaHistorial" class="history-list"></div>
                     </div>
                 </section>
 
@@ -274,9 +316,21 @@
                             </p>
                         </div>
 
-                        <div class="result-badge">
-                            <i class="bi bi-check-circle-fill me-1"></i>
-                            Listo
+                        <div class="result-actions">
+                            <button id="btnCopiarMarkdown" class="btn btn-outline-secondary" type="button">
+                                <i class="bi bi-clipboard-check me-2"></i>
+                                Copiar Markdown
+                            </button>
+
+                            <button id="btnExportarPdf" class="btn btn-outline-primary" type="button">
+                                <i class="bi bi-file-earmark-pdf me-2"></i>
+                                Exportar PDF
+                            </button>
+
+                            <div class="result-badge">
+                                <i class="bi bi-check-circle-fill me-1"></i>
+                                Listo
+                            </div>
                         </div>
                     </div>
 

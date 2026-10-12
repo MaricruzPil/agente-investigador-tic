@@ -1,4 +1,5 @@
 import json
+import re
 
 from flask import Flask, Response, render_template, request, stream_with_context
 from openai import OpenAI
@@ -13,6 +14,28 @@ app = Flask(
 )
 
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+PALABRAS_CLAVE_TIC = {
+    "tic", "tecnologia", "tecnologias", "informacion", "comunicacion",
+    "comunicaciones", "internet", "red", "redes", "wifi", "bluetooth",
+    "iot", "ia", "inteligencia artificial", "machine learning",
+    "aprendizaje automatico", "deep learning", "nube", "cloud",
+    "ciberseguridad", "seguridad informatica", "software", "hardware",
+    "programacion", "base de datos", "bases de datos", "servidor",
+    "servidores", "api", "algoritmo", "algoritmos", "blockchain",
+    "big data", "datos", "telecomunicaciones", "5g", "fibra optica",
+    "sistema operativo", "sistemas operativos", "app", "aplicacion",
+    "aplicaciones", "web", "computadora", "computadoras", "robotica",
+    "automatizacion", "realidad virtual", "realidad aumentada",
+    "criptografia", "encriptacion", "devops", "red neuronal",
+    "microservicios", "infraestructura", "saas", "paas", "ia generativa"
+}
+
+PROFUNDIDADES_BUSQUEDA = {
+    "rapida": "low",
+    "normal": "medium",
+    "profunda": "high"
+}
 
 
 @app.route("/")
@@ -37,19 +60,49 @@ def obtener_valor(objeto, atributo, valor_default=None):
     return getattr(objeto, atributo, valor_default)
 
 
+def normalizar_texto(texto):
+    texto = texto.lower()
+    reemplazos = {
+        "á": "a",
+        "é": "e",
+        "í": "i",
+        "ó": "o",
+        "ú": "u",
+        "ü": "u",
+        "ñ": "n",
+    }
+
+    for origen, destino in reemplazos.items():
+        texto = texto.replace(origen, destino)
+
+    return texto
+
+
+def es_pregunta_tic(pregunta):
+    texto = normalizar_texto(pregunta)
+
+    if any(palabra in texto for palabra in PALABRAS_CLAVE_TIC):
+        return True
+
+    patron_tecnico = re.compile(
+        r"\b(protocolos?|plataformas?|arquitecturas?|sensores?|"
+        r"ciberataques?|vulnerabilidades?|modelo[s]? de lenguaje|"
+        r"llm|chatbot[s]?|framework[s]?|lenguaje[s]? de programacion)\b"
+    )
+
+    return bool(patron_tecnico.search(texto))
+
+
 def emitir_fuentes_desde_accion(accion, urls_emitidas):
     if accion is None:
         return []
 
     nuevas_fuentes = []
-
     tipo_accion = obtener_valor(accion, "type", "")
-
     url_directa = obtener_valor(accion, "url")
 
     if url_directa and url_directa not in urls_emitidas:
         urls_emitidas.add(url_directa)
-
         nuevas_fuentes.append({
             "titulo": url_directa,
             "url": url_directa,
@@ -63,7 +116,6 @@ def emitir_fuentes_desde_accion(accion, urls_emitidas):
 
         if url and url not in urls_emitidas:
             urls_emitidas.add(url)
-
             nuevas_fuentes.append({
                 "titulo": url,
                 "url": url,
@@ -77,26 +129,46 @@ def emitir_fuentes_desde_accion(accion, urls_emitidas):
 def investigar():
     datos = request.get_json(silent=True) or {}
     pregunta = datos.get("pregunta", "").strip()
+    profundidad = datos.get("profundidad", "normal")
+    search_context_size = PROFUNDIDADES_BUSQUEDA.get(profundidad, "medium")
 
     if not pregunta:
         return Response(
-            sse(
-                "error",
-                {
-                    "mensaje": "Debes escribir una pregunta de investigación."
-                }
-            ),
-            mimetype="text/event-stream",
+            sse("error", {
+                "tipo": "validacion",
+                "mensaje": "Debes escribir una pregunta de investigación."
+            }),
+            mimetype="text/event-stream; charset=utf-8",
             status=400
         )
 
-    instrucciones = """
-Eres un agente investigador especializado en tecnologías de información
-y comunicaciones.
+    if not es_pregunta_tic(pregunta):
+        return Response(
+            sse("error", {
+                "tipo": "especializacion",
+                "mensaje": (
+                    "No puedo responder esa consulta porque está fuera de mi "
+                    "especialización. Este agente investiga temas de Tecnologías "
+                    "de la Información y las Comunicaciones, como IA, redes, "
+                    "ciberseguridad, nube, IoT, software, hardware y datos."
+                )
+            }),
+            mimetype="text/event-stream; charset=utf-8",
+            status=422
+        )
 
-Debes investigar la pregunta del usuario utilizando búsqueda web
-y varias fuentes confiables. El tono debe ser claro, profesional y
-académico, pensado para estudiantes universitarios.
+    instrucciones = """
+Eres un agente investigador especializado exclusivamente en Tecnologías de la
+Información y las Comunicaciones (TIC).
+
+Debes investigar la pregunta del usuario utilizando búsqueda web y varias
+fuentes confiables. El tono debe ser claro, profesional y académico, pensado
+para estudiantes universitarios.
+
+Si la pregunta se aleja de TIC, tecnología, informática, telecomunicaciones,
+software, hardware, redes, ciberseguridad, nube, datos, IoT o inteligencia
+artificial, rechaza la consulta de forma breve y amable. No investigues temas
+fuera de esa especialización.
 
 Proceso que debes seguir:
 1. Analiza la pregunta.
@@ -113,8 +185,8 @@ REGLAS IMPORTANTES:
 - Escribe TODO en español.
 - No inventes datos ni fuentes.
 - Utiliza varias fuentes cuando sea posible.
-- Prioriza fuentes oficiales, organismos, documentación técnica,
-  universidades o medios especializados confiables.
+- Prioriza fuentes oficiales, organismos, documentación técnica, universidades
+  o medios especializados confiables.
 - No agregues una sección manual de URLs al final.
 - Las URLs se mostrarán por separado en la interfaz.
 
@@ -135,8 +207,8 @@ Debes responder en Markdown usando exactamente esta estructura:
 
 ## 3. Hallazgos principales
 
-Para cada hallazgo utiliza EXACTAMENTE este formato y coloca cada campo
-en una línea independiente:
+Para cada hallazgo utiliza EXACTAMENTE este formato y coloca cada campo en una
+línea independiente:
 
 ### Hallazgo 1
 **Nombre:** [Nombre breve y claro del hallazgo]
@@ -195,22 +267,17 @@ Debes incluir al menos 3 filas cuando la pregunta lo permita.
         reporte_acumulado = []
 
         try:
-            yield sse(
-                "estado",
-                {
-                    "etapa": "analizando",
-                    "mensaje": "Analizando la pregunta de investigación..."
-                }
-            )
+            yield sse("estado", {
+                "etapa": "analizando",
+                "mensaje": "Analizando la pregunta de investigación..."
+            })
 
             stream = client.responses.create(
                 model=OPENAI_MODEL,
-                tools=[
-                    {
-                        "type": "web_search",
-                        "search_context_size": "medium"
-                    }
-                ],
+                tools=[{
+                    "type": "web_search",
+                    "search_context_size": search_context_size
+                }],
                 input=[
                     {
                         "role": "system",
@@ -228,31 +295,25 @@ Debes incluir al menos 3 filas cuando la pregunta lo permita.
                 tipo = obtener_valor(event, "type", "")
 
                 if tipo == "response.web_search_call.in_progress":
-                    yield sse(
-                        "estado",
-                        {
-                            "etapa": "busqueda",
-                            "mensaje": "Iniciando una búsqueda en Internet..."
-                        }
-                    )
+                    yield sse("estado", {
+                        "etapa": "busqueda",
+                        "mensaje": "Iniciando una búsqueda en Internet..."
+                    })
 
                 elif tipo == "response.web_search_call.searching":
-                    yield sse(
-                        "estado",
-                        {
-                            "etapa": "busqueda",
-                            "mensaje": "Buscando, contrastando y consultando fuentes..."
-                        }
-                    )
+                    yield sse("estado", {
+                        "etapa": "busqueda",
+                        "mensaje": "Buscando, contrastando y consultando fuentes..."
+                    })
 
                 elif tipo == "response.web_search_call.completed":
-                    yield sse(
-                        "estado",
-                        {
-                            "etapa": "revision",
-                            "mensaje": "Búsqueda completada. Revisando la información encontrada..."
-                        }
-                    )
+                    yield sse("estado", {
+                        "etapa": "revision",
+                        "mensaje": (
+                            "Búsqueda completada. Revisando la información "
+                            "encontrada..."
+                        )
+                    })
 
                 elif tipo == "response.output_item.done":
                     item = obtener_valor(event, "item")
@@ -279,47 +340,31 @@ Debes incluir al menos 3 filas cuando la pregunta lo permita.
 
                         if url and url not in urls_emitidas:
                             urls_emitidas.add(url)
-
-                            yield sse(
-                                "fuente",
-                                {
-                                    "titulo": titulo,
-                                    "url": url,
-                                    "origen": "cita"
-                                }
-                            )
+                            yield sse("fuente", {
+                                "titulo": titulo,
+                                "url": url,
+                                "origen": "cita"
+                            })
 
                 elif tipo == "response.output_text.delta":
                     delta = obtener_valor(event, "delta", "")
 
                     if delta:
                         reporte_acumulado.append(delta)
-
-                        yield sse(
-                            "texto",
-                            {
-                                "delta": delta
-                            }
-                        )
+                        yield sse("texto", {"delta": delta})
 
                 elif tipo == "response.output_text.done":
-                    yield sse(
-                        "estado",
-                        {
-                            "etapa": "finalizando",
-                            "mensaje": "Sintetizando y organizando el reporte final..."
-                        }
-                    )
+                    yield sse("estado", {
+                        "etapa": "finalizando",
+                        "mensaje": "Sintetizando y organizando el reporte final..."
+                    })
 
                 elif tipo == "response.completed":
-                    yield sse(
-                        "completado",
-                        {
-                            "mensaje": "Investigación completada.",
-                            "reporte": "".join(reporte_acumulado),
-                            "total_fuentes": len(urls_emitidas)
-                        }
-                    )
+                    yield sse("completado", {
+                        "mensaje": "Investigación completada.",
+                        "reporte": "".join(reporte_acumulado),
+                        "total_fuentes": len(urls_emitidas)
+                    })
 
                 elif tipo == "error":
                     mensaje = obtener_valor(
@@ -328,27 +373,23 @@ Debes incluir al menos 3 filas cuando la pregunta lo permita.
                         "OpenAI devolvió un error durante la investigación."
                     )
 
-                    yield sse(
-                        "error",
-                        {
-                            "mensaje": mensaje
-                        }
-                    )
+                    yield sse("error", {
+                        "tipo": "openai",
+                        "mensaje": mensaje
+                    })
 
         except Exception as error:
-            print("ERROR:", error)
+            app.logger.exception("Error al realizar la investigación")
 
-            yield sse(
-                "error",
-                {
-                    "mensaje": "Ocurrió un error al realizar la investigación.",
-                    "detalle": str(error)
-                }
-            )
+            yield sse("error", {
+                "tipo": "servidor",
+                "mensaje": "Ocurrió un error al realizar la investigación.",
+                "detalle": str(error)
+            })
 
     return Response(
         generar(),
-        mimetype="text/event-stream",
+        mimetype="text/event-stream; charset=utf-8",
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no"
