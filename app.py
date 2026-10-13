@@ -1,10 +1,9 @@
 import json
+import os
 import re
 
 from flask import Flask, Response, render_template, request, stream_with_context
-from openai import OpenAI
-
-from config import OPENAI_API_KEY, OPENAI_MODEL
+from openai import OpenAI, OpenAIError
 
 
 app = Flask(
@@ -13,7 +12,7 @@ app = Flask(
     static_url_path="/assets"
 )
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 
 PALABRAS_CLAVE_TIC = {
     "tic", "tecnologia", "tecnologias", "informacion", "comunicacion",
@@ -30,6 +29,17 @@ PALABRAS_CLAVE_TIC = {
     "criptografia", "encriptacion", "devops", "red neuronal",
     "microservicios", "infraestructura", "saas", "paas", "ia generativa"
 }
+
+
+def crear_cliente_openai():
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        raise OpenAIError(
+            "Falta configurar la variable de entorno OPENAI_API_KEY."
+        )
+
+    return OpenAI(api_key=api_key)
 
 PROFUNDIDADES_BUSQUEDA = {
     "rapida": "low",
@@ -267,6 +277,8 @@ Debes incluir al menos 3 filas cuando la pregunta lo permita.
         reporte_acumulado = []
 
         try:
+            client = crear_cliente_openai()
+
             yield sse("estado", {
                 "etapa": "analizando",
                 "mensaje": "Analizando la pregunta de investigación..."
