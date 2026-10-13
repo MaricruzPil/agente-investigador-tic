@@ -12,7 +12,7 @@
 
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&display=swap" rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -25,26 +25,53 @@
 
     <div class="page-bg"></div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark app-navbar fixed-top">
+    <nav class="navbar navbar-expand-lg app-navbar">
         <div class="container">
-            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
-                <span class="brand-mark">
-                    <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                        <path d="M4 6.5h12.5A2.5 2.5 0 0 1 19 9v9.5H6.5A2.5 2.5 0 0 1 4 16V6.5Z"></path>
-                        <path d="M19 9h1a1 1 0 0 1 1 1v6.5a2 2 0 0 1-2 2"></path>
-                        <path d="M7 10h6"></path>
-                        <path d="M7 13h9"></path>
-                        <path d="M7 16h5"></path>
-                    </svg>
-                </span>
-                Agente Investigador
-            </a>
+            <div class="utility-bar">
+                <span>Observatorio de tecnología, sociedad y conocimiento</span>
+                <span class="edition">Práctica 2.2 · IA aplicada a las TIC</span>
+            </div>
 
-            <div class="d-flex align-items-center gap-2">
+            <div class="brand-row">
+                <button
+                    id="menuToggle"
+                    class="icon-button menu-button"
+                    type="button"
+                    aria-label="Abrir menú"
+                    aria-expanded="false"
+                    aria-controls="mainNav"
+                >
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
+                    <span class="brand-mark">
+                        <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M4 6.5h12.5A2.5 2.5 0 0 1 19 9v9.5H6.5A2.5 2.5 0 0 1 4 16V6.5Z"></path>
+                            <path d="M19 9h1a1 1 0 0 1 1 1v6.5a2 2 0 0 1-2 2"></path>
+                            <path d="M7 10h6"></path>
+                            <path d="M7 13h9"></path>
+                            <path d="M7 16h5"></path>
+                        </svg>
+                    </span>
+                    <span>Agente<br>Investigador</span>
+                </a>
+
+                <p class="brand-descriptor">Inteligencia aplicada a las TIC</p>
+
                 <span class="badge badge-soft">
                     <i class="bi bi-globe2 me-1"></i>
                     Web Search
                 </span>
+            </div>
+
+            <div id="mainNav" class="section-nav">
+                <a class="active" href="#consulta">Investigación</a>
+                <a href="#actividad">Actividad</a>
+                <a href="#resultado">Reporte</a>
+                <a href="#historial">Archivo</a>
+                <span>Especial TIC · 2025</span>
             </div>
         </div>
     </nav>
@@ -54,65 +81,59 @@
             <div class="row justify-content-center">
                 <div class="col-xl-10">
 
-                    <div class="hero-card">
-                        <div class="hero-grid">
+                    <div class="hero-grid">
 
-                            <div>
-                                <span class="eyebrow">
-                                    PRÁCTICA 2.2 · IA APLICADA A LAS TIC
+                        <div class="hero-copy">
+                            <span class="eyebrow hero-kicker">
+                                <span>Agente activo</span>
+                                Investigación asistida por IA
+                            </span>
+
+                            <h1 class="hero-title">
+                                Investigue el presente.<br>
+                                Comprenda lo que sigue.
+                            </h1>
+
+                            <p class="hero-text">
+                                Formule preguntas sobre Tecnologías de la Información y la Comunicación
+                                y obtenga un análisis riguroso, trazable y construido a partir de
+                                fuentes verificadas.
+                            </p>
+
+                            <div class="hero-badges">
+                                <span class="pill">
+                                    Planificación
                                 </span>
 
-                                <h1 class="hero-title">
-                                    Investiga, compara y sintetiza
-                                    información con un agente de IA
-                                </h1>
+                                <span class="pill">
+                                    Búsqueda web
+                                </span>
 
-                                <p class="hero-text">
-                                    Escribe una pregunta sobre Tecnologías de la
-                                    Información y las Comunicaciones. El agente
-                                    analiza el problema, consulta fuentes en línea
-                                    y genera un reporte profesional.
-                                </p>
+                                <span class="pill">
+                                    Comparación
+                                </span>
 
-                                <div class="hero-badges">
-                                    <span class="pill">
-                                        <i class="bi bi-lightbulb me-1"></i>
-                                        Planificación
-                                    </span>
-
-                                    <span class="pill">
-                                        <i class="bi bi-search me-1"></i>
-                                        Búsqueda web
-                                    </span>
-
-                                    <span class="pill">
-                                        <i class="bi bi-table me-1"></i>
-                                        Comparación
-                                    </span>
-
-                                    <span class="pill">
-                                        <i class="bi bi-file-earmark-richtext me-1"></i>
-                                        Reporte
-                                    </span>
-                                </div>
+                                <span class="pill">
+                                    Reporte
+                                </span>
                             </div>
-
-                            <div class="hero-side">
-                                <div class="mini-panel">
-                                    <div class="mini-title">
-                                        Flujo del agente
-                                    </div>
-
-                                    <div class="mini-steps">
-                                        <div><span>1</span> Valida la especialidad TIC</div>
-                                        <div><span>2</span> Busca fuentes</div>
-                                        <div><span>3</span> Contrasta evidencia</div>
-                                        <div><span>4</span> Genera reporte</div>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
+
+                        <div class="hero-side">
+                            <div class="mini-panel">
+                                <div class="mini-title">
+                                    Método del agente
+                                </div>
+
+                                <div class="mini-steps">
+                                    <div><span>01</span> Valida la especialidad TIC</div>
+                                    <div><span>02</span> Busca fuentes relevantes</div>
+                                    <div><span>03</span> Contrasta la evidencia</div>
+                                    <div><span>04</span> Genera el reporte</div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                 </div>
@@ -125,48 +146,43 @@
         <div class="row justify-content-center">
             <div class="col-xl-10">
 
-                <section class="glass-card composer-card mb-4">
-                    <div class="card-topbar"></div>
-
-                    <div class="p-4 p-lg-5">
+                <section id="consulta" class="glass-card composer-card mb-4">
+                    <div class="p-4 p-lg-5 composer-inner">
 
                         <div class="section-heading mb-3">
-                            <div class="section-icon">
-                                <i class="bi bi-question-circle"></i>
-                            </div>
-
                             <div>
-                                <span class="section-kicker">CONSULTA</span>
+                                <span class="section-kicker">Nueva consulta</span>
                                 <h2 class="section-title mb-1">
                                     Pregunta de investigación
                                 </h2>
+                            </div>
+
+                            <div>
                                 <p class="section-subtitle mb-0">
-                                    Puedes preguntar sobre IoT, IA, redes,
-                                    ciberseguridad, nube, software, datos u otras
-                                    tecnologías TIC.
+                                    Consulte sobre IA, conectividad, ciberseguridad, transformación
+                                    digital, datos, telecomunicaciones o políticas TIC.
                                 </p>
                             </div>
                         </div>
 
                         <textarea id="pregunta" class="form-control question-box" rows="4"
-                            placeholder="Ejemplo: ¿Cuáles son las principales tecnologías de conectividad utilizadas actualmente en IoT y en qué escenarios conviene utilizar cada una?"></textarea>
+                            placeholder="¿Qué desea investigar?"></textarea>
 
-                        <div class="research-options mt-4">
-                            <label class="option-label" for="profundidad">
-                                Profundidad de investigación
-                            </label>
+                        <div class="composer-controls mt-4">
+                            <div class="research-options">
+                                <label class="option-label" for="profundidad">
+                                    Profundidad
+                                </label>
 
-                            <select id="profundidad" class="form-select depth-select">
-                                <option value="rapida">Rápida</option>
-                                <option value="normal" selected>Normal</option>
-                                <option value="profunda">Profunda</option>
-                            </select>
-                        </div>
+                                <select id="profundidad" class="form-select depth-select">
+                                    <option value="rapida">Rápida</option>
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="profunda">Profunda</option>
+                                </select>
 
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4">
-                            <div class="helper-text">
-                                <i class="bi bi-info-circle me-1"></i>
-                                El agente solo atiende investigaciones relacionadas con TIC.
+                                <small class="depth-help">
+                                    La profundidad determina el número de búsquedas y fuentes consultadas.
+                                </small>
                             </div>
 
                             <div class="action-group">
@@ -185,135 +201,134 @@
                     </div>
                 </section>
 
-                <section id="historial" class="glass-card mb-4 d-none">
-                    <div class="p-4 p-lg-5">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-                            <div>
-                                <span class="section-kicker">HISTORIAL</span>
-                                <h2 class="section-title h4 mb-1">
-                                    Investigaciones recientes
-                                </h2>
-                                <p class="section-subtitle mb-0">
-                                    Guardadas localmente en este navegador.
-                                </p>
-                            </div>
-
-                            <button id="btnLimpiarHistorial" class="btn btn-sm btn-outline-secondary" type="button">
-                                <i class="bi bi-trash3 me-1"></i>
-                                Limpiar historial
-                            </button>
+                <section id="historial" class="history-section mb-4 d-none">
+                    <div class="history-heading">
+                        <div>
+                            <span class="section-kicker">Archivo local</span>
+                            <h2 class="section-title h4 mb-1">
+                                Investigaciones recientes
+                            </h2>
+                            <p class="section-subtitle mb-0">
+                                Guardadas localmente en este navegador.
+                            </p>
                         </div>
 
-                        <div id="listaHistorial" class="history-list"></div>
+                        <button id="btnLimpiarHistorial" class="btn btn-sm btn-outline-secondary" type="button">
+                            <i class="bi bi-trash3 me-1"></i>
+                            Limpiar historial
+                        </button>
                     </div>
+
+                    <div id="listaHistorial" class="history-list"></div>
                 </section>
 
-                <section id="actividad" class="glass-card mb-4 d-none">
-                    <div class="p-4 p-lg-5">
+                <section id="actividad" class="activity-layout d-none" aria-live="polite">
 
-                        <div class="d-flex flex-column flex-lg-row gap-4">
+                    <div class="activity-main">
+                        <div class="section-heading activity-heading mb-3">
+                            <div>
+                                <span class="section-kicker">En curso</span>
+                                <h2 class="section-title mb-1">
+                                    Actividad del agente
+                                </h2>
+                            </div>
 
-                            <div class="flex-grow-1">
-                                <div class="section-heading mb-3">
-                                    <div class="section-icon pulse-icon">
-                                        <i class="bi bi-cpu"></i>
-                                    </div>
+                            <span class="live-indicator">Analizando</span>
+                        </div>
 
-                                    <div>
-                                        <span class="section-kicker">PROCESO</span>
-                                        <h2 class="section-title mb-1">
-                                            Actividad del agente
-                                        </h2>
-                                        <p class="section-subtitle mb-0">
-                                            Visualiza el avance de la investigación en tiempo real.
-                                        </p>
-                                    </div>
+                        <div id="estadoActual" class="status-ribbon mb-4">
+                            Preparando la investigación...
+                        </div>
+
+                        <div class="process-track">
+                            <div class="track-line"></div>
+
+                            <div class="process-step" data-etapa="analizando">
+                                <span class="process-index">01</span>
+                                <div class="process-bullet">
+                                    <i class="bi bi-lightbulb"></i>
                                 </div>
-
-                                <div id="estadoActual" class="status-ribbon mb-4">
-                                    Preparando la investigación...
-                                </div>
-
-                                <div class="process-track">
-                                    <div class="track-line"></div>
-
-                                    <div class="process-step" data-etapa="analizando">
-                                        <div class="process-bullet">
-                                            <i class="bi bi-lightbulb"></i>
-                                        </div>
-                                        <div class="process-label">Analizar</div>
-                                    </div>
-
-                                    <div class="process-step" data-etapa="busqueda">
-                                        <div class="process-bullet">
-                                            <i class="bi bi-globe2"></i>
-                                        </div>
-                                        <div class="process-label">Buscar</div>
-                                    </div>
-
-                                    <div class="process-step" data-etapa="revision">
-                                        <div class="process-bullet">
-                                            <i class="bi bi-journal-text"></i>
-                                        </div>
-                                        <div class="process-label">Revisar</div>
-                                    </div>
-
-                                    <div class="process-step" data-etapa="finalizando">
-                                        <div class="process-bullet">
-                                            <i class="bi bi-check2-square"></i>
-                                        </div>
-                                        <div class="process-label">Sintetizar</div>
-                                    </div>
-                                </div>
-
-                                <div id="previewReporte" class="preview-panel mt-4">
-                                    <div class="preview-header">
-                                        <i class="bi bi-file-earmark-text me-2"></i>
-                                        Borrador del reporte
-                                    </div>
-
-                                    <div id="previewContent" class="preview-content">
-                                        El borrador aparecerá aquí mientras el agente redacta.
-                                    </div>
+                                <div>
+                                    <strong class="process-label">Analizar</strong>
+                                    <small>Comprender alcance</small>
                                 </div>
                             </div>
 
-                            <aside class="sources-sidebar">
-                                <div class="sidebar-header">
-                                    <div>
-                                        <span class="section-kicker">EVIDENCIA</span>
-                                        <h3 class="h5 mb-1">
-                                            Fuentes detectadas
-                                        </h3>
-                                        <p class="section-subtitle mb-0">
-                                            Sitios consultados durante la investigación.
-                                        </p>
-                                    </div>
-
-                                    <span id="contadorFuentes" class="counter-pill">
-                                        0
-                                    </span>
+                            <div class="process-step" data-etapa="busqueda">
+                                <span class="process-index">02</span>
+                                <div class="process-bullet">
+                                    <i class="bi bi-globe2"></i>
                                 </div>
-
-                                <div id="fuentesEnVivo" class="live-sources">
-                                    <div id="sinFuentes" class="empty-sources">
-                                        Las fuentes aparecerán aquí conforme el agente
-                                        vaya consultándolas.
-                                    </div>
+                                <div>
+                                    <strong class="process-label">Buscar</strong>
+                                    <small>Localizar fuentes</small>
                                 </div>
-                            </aside>
+                            </div>
 
+                            <div class="process-step" data-etapa="revision">
+                                <span class="process-index">03</span>
+                                <div class="process-bullet">
+                                    <i class="bi bi-journal-text"></i>
+                                </div>
+                                <div>
+                                    <strong class="process-label">Revisar</strong>
+                                    <small>Contrastar evidencia</small>
+                                </div>
+                            </div>
+
+                            <div class="process-step" data-etapa="finalizando">
+                                <span class="process-index">04</span>
+                                <div class="process-bullet">
+                                    <i class="bi bi-check2-square"></i>
+                                </div>
+                                <div>
+                                    <strong class="process-label">Sintetizar</strong>
+                                    <small>Redactar reporte</small>
+                                </div>
+                            </div>
                         </div>
 
+                        <div id="previewReporte" class="preview-panel mt-4">
+                            <div class="preview-header">
+                                <span class="section-kicker">Documento en proceso</span>
+                                <span>Borrador del reporte</span>
+                            </div>
+
+                            <div id="previewContent" class="preview-content">
+                                El borrador aparecerá aquí mientras el agente redacta.
+                            </div>
+                        </div>
                     </div>
+
+                    <aside class="sources-sidebar">
+                        <div class="sidebar-header">
+                            <div>
+                                <span class="section-kicker">Rastreo web</span>
+                                <h3 class="h5 mb-1">
+                                    Fuentes detectadas
+                                </h3>
+                            </div>
+
+                            <span id="contadorFuentes" class="counter-pill">
+                                0
+                            </span>
+                        </div>
+
+                        <div id="fuentesEnVivo" class="live-sources">
+                            <div id="sinFuentes" class="empty-sources">
+                                Las fuentes aparecerán conforme sean verificadas.
+                            </div>
+                        </div>
+                    </aside>
+
                 </section>
 
                 <section id="error" class="alert alert-danger shadow-sm d-none"></section>
 
-                <section id="resultado" class="d-none">
+                <section id="resultado" class="result-section d-none">
                     <div class="result-top">
                         <div>
-                            <span class="section-kicker">RESULTADO</span>
+                            <span class="section-kicker">Resultado</span>
                             <h2 class="section-title mb-1">
                                 Reporte de investigación
                             </h2>
@@ -323,6 +338,11 @@
                         </div>
 
                         <div class="result-actions">
+                            <div class="result-badge">
+                                <i class="bi bi-check-circle-fill me-1"></i>
+                                Listo
+                            </div>
+
                             <button id="btnCopiarMarkdown" class="btn btn-outline-secondary" type="button">
                                 <i class="bi bi-clipboard-check me-2"></i>
                                 Copiar Markdown
@@ -332,36 +352,29 @@
                                 <i class="bi bi-file-earmark-pdf me-2"></i>
                                 Exportar PDF
                             </button>
-
-                            <div class="result-badge">
-                                <i class="bi bi-check-circle-fill me-1"></i>
-                                Listo
-                            </div>
                         </div>
                     </div>
 
                     <div id="reporte" class="report-layout"></div>
 
-                    <section class="glass-card mt-4">
-                        <div class="p-4 p-lg-5">
-                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-                                <div>
-                                    <span class="section-kicker">REFERENCIAS</span>
-                                    <h3 class="section-title h4 mb-1">
-                                        Fuentes consultadas
-                                    </h3>
-                                    <p class="section-subtitle mb-0">
-                                        URLs detectadas por la actividad de búsqueda y por las citas del reporte.
-                                    </p>
-                                </div>
-
-                                <span id="contadorFuentesFinal" class="counter-pill solid">
-                                    0
-                                </span>
+                    <section class="references-section mt-4">
+                        <div class="references-heading">
+                            <div>
+                                <span class="section-kicker">Referencias</span>
+                                <h3 class="section-title h4 mb-1">
+                                    Fuentes consultadas
+                                </h3>
+                                <p class="section-subtitle mb-0">
+                                    Documentos, publicaciones y recursos utilizados por el agente.
+                                </p>
                             </div>
 
-                            <div id="fuentesFinales" class="row g-3"></div>
+                            <span id="contadorFuentesFinal" class="counter-pill solid">
+                                0
+                            </span>
                         </div>
+
+                        <div id="fuentesFinales" class="row g-3"></div>
                     </section>
                 </section>
 
@@ -370,13 +383,16 @@
 
     </main>
 
-    <footer class="footer py-4 mt-5">
-        <div class="container text-center small text-muted">
-            Inteligencia Artificial Aplicada a las TIC · Práctica 2.2 · Agente de investigación con búsqueda web
+    <footer class="footer">
+        <div class="container footer-grid">
+            <strong>Agente Investigador</strong>
+            <span>Práctica 2.2 · IA aplicada a las TIC</span>
+            <span>Investigación rigurosa sobre el presente digital.</span>
         </div>
     </footer>
 
     <script src="/assets/js/app.js"></script>
+    <script src="/assets/js/nav-menu.js"></script>
 
 </body>
 
