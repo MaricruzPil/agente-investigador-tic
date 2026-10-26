@@ -14,23 +14,6 @@ app = Flask(
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 
-PALABRAS_CLAVE_TIC = {
-    "tic", "tecnologia", "tecnologias", "informacion", "comunicacion",
-    "comunicaciones", "internet", "red", "redes", "wifi", "bluetooth",
-    "iot", "ia", "inteligencia artificial", "machine learning",
-    "aprendizaje automatico", "deep learning", "nube", "cloud",
-    "ciberseguridad", "seguridad informatica", "software", "hardware",
-    "programacion", "base de datos", "bases de datos", "servidor",
-    "servidores", "api", "algoritmo", "algoritmos", "blockchain",
-    "big data", "datos", "telecomunicaciones", "5g", "fibra optica",
-    "sistema operativo", "sistemas operativos", "app", "aplicacion",
-    "aplicaciones", "web", "computadora", "computadoras", "robotica",
-    "automatizacion", "realidad virtual", "realidad aumentada",
-    "criptografia", "encriptacion", "devops", "red neuronal",
-    "microservicios", "infraestructura", "saas", "paas", "ia generativa"
-}
-
-
 def crear_cliente_openai():
     api_key = os.getenv("OPENAI_API_KEY")
 
@@ -70,37 +53,32 @@ def obtener_valor(objeto, atributo, valor_default=None):
     return getattr(objeto, atributo, valor_default)
 
 
-def normalizar_texto(texto):
-    texto = texto.lower()
-    reemplazos = {
-        "á": "a",
-        "é": "e",
-        "í": "i",
-        "ó": "o",
-        "ú": "u",
-        "ü": "u",
-        "ñ": "n",
-    }
-
-    for origen, destino in reemplazos.items():
-        texto = texto.replace(origen, destino)
-
-    return texto
-
-
-def es_pregunta_tic(pregunta):
-    texto = normalizar_texto(pregunta)
-
-    if any(palabra in texto for palabra in PALABRAS_CLAVE_TIC):
-        return True
-
-    patron_tecnico = re.compile(
-        r"\b(protocolos?|plataformas?|arquitecturas?|sensores?|"
-        r"ciberataques?|vulnerabilidades?|modelo[s]? de lenguaje|"
-        r"llm|chatbot[s]?|framework[s]?|lenguaje[s]? de programacion)\b"
+def clasificar_alcance_con_ia(client, pregunta):
+    respuesta = client.responses.create(
+        model=OPENAI_MODEL,
+        input=[
+            {
+                "role": "system",
+                "content": (
+                    "Determina si una pregunta pertenece al ámbito de las "
+                    "Tecnologías de la Información y las Comunicaciones. "
+                    "Comprende el contexto, incluso si la pregunta no usa "
+                    "palabras técnicas explícitas, contiene errores, usa el "
+                    "nombre de un producto o mezcla tecnología con otro tema. "
+                    "Responde únicamente un JSON válido con las claves "
+                    "es_tic (boolean) y razon (string breve). Considera TIC "
+                    "a la informática, software, hardware, programación, "
+                    "internet, IA, datos, telecomunicaciones, ciberseguridad "
+                    "y herramientas digitales."
+                )
+            },
+            {"role": "user", "content": pregunta}
+        ]
     )
-
-    return bool(patron_tecnico.search(texto))
+    contenido = obtener_valor(respuesta, "output_text", "").strip()
+    contenido = re.sub(r"^```(?:json)?\s*|\s*```$", "", contenido).strip()
+    resultado = json.loads(contenido)
+    return bool(resultado.get("es_tic")), resultado.get("razon", "")
 
 
 def emitir_fuentes_desde_accion(accion, urls_emitidas):
@@ -152,15 +130,32 @@ def investigar():
             status=400
         )
 
-    if not es_pregunta_tic(pregunta):
+    try:
+        cliente_clasificacion = crear_cliente_openai()
+        es_tic, _razon = clasificar_alcance_con_ia(
+            cliente_clasificacion,
+            pregunta
+        )
+    except (OpenAIError, json.JSONDecodeError, TypeError, ValueError) as error_clasificacion:
+        return Response(
+            sse("error", {
+                "tipo": "servidor",
+                "mensaje": "No se pudo analizar el contexto de la pregunta.",
+                "detalle": str(error_clasificacion)
+            }),
+            mimetype="text/event-stream; charset=utf-8",
+            status=503
+        )
+
+    if not es_tic:
         return Response(
             sse("error", {
                 "tipo": "especializacion",
                 "mensaje": (
-                    "No puedo responder esa consulta porque está fuera de mi "
-                    "especialización. Este agente investiga temas de Tecnologías "
-                    "de la Información y las Comunicaciones, como IA, redes, "
-                    "ciberseguridad, nube, IoT, software, hardware y datos."
+                    "La pregunta no está dentro del tema de Tecnologías de la "
+                    "Información (TI). Este agente responde consultas sobre "
+                    "IA, redes, ciberseguridad, nube, IoT, software, hardware "
+                    "y datos."
                 )
             }),
             mimetype="text/event-stream; charset=utf-8",
